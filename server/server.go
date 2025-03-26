@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
@@ -21,6 +24,7 @@ const timeout = 5 * time.Second
 var knockSequence []int
 var state = make(map[string][]int) // To track client progress
 var stateMutex = sync.Mutex{}
+var secretKey = "mysecretkey" // Change this to a secure key
 
 // Read knock sequence from a file
 func loadKnockSequence(fileName string) error {
@@ -50,6 +54,19 @@ func loadKnockSequence(fileName string) error {
 	return nil
 }
 
+// Generate expected HMAC
+func expectedHMAC(port int) string {
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(fmt.Sprintf("%d", port)))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// Validate HMAC
+func validateHMAC(port int, hmacValue string) bool {
+	expected := expectedHMAC(port)
+	return hmac.Equal([]byte(hmacValue), []byte(expected))
+}
+
 // Allow IP using iptables (only if it doesn't already exist)
 func allowIP(ip string) error {
 	// Check if the rule already exists
@@ -69,7 +86,7 @@ func allowIP(ip string) error {
 }
 
 // Handle port knock logic
-func handleKnock(clientIP string, port int) {
+func handleKnock(clientIP string, port int, hmacValue string) {
 	stateMutex.Lock()
 	defer stateMutex.Unlock()
 
@@ -80,7 +97,17 @@ func handleKnock(clientIP string, port int) {
 	}
 
 	nextPortIndex := len(progress)
+
 	if nextPortIndex < len(knockSequence) && port == knockSequence[nextPortIndex] {
+		// ✅ Correct port -> Now validate HMAC
+		if nextPortIndex == len(knockSequence)-1 { // Only validate HMAC on the last port
+			if !validateHMAC(port, hmacValue) {
+				fmt.Printf("❌ Invalid HMAC for port %d from %s\n", port, clientIP)
+				delete(state, clientIP)
+				return
+			}
+		}
+
 		state[clientIP] = append(progress, port)
 		fmt.Printf("✅ Knock %d/%d correct from %s\n", nextPortIndex+1, len(knockSequence), clientIP)
 
@@ -136,8 +163,13 @@ func listenForKnocks() {
 				ip, _ := ipLayer.(*layers.IPv4)
 				clientIP := ip.SrcIP.String()
 				port := int(udp.DstPort)
-				fmt.Printf("📥 Received knock from %s on port %d\n", clientIP, port)
-				handleKnock(clientIP, port)
+
+				if packet.ApplicationLayer() != nil { // ✅ Fix for nil pointer issue
+					hmacValue := string(packet.ApplicationLayer().Payload())
+					handleKnock(clientIP, port, hmacValue)
+				} else {
+					fmt.Printf("❌ No application layer in packet from %s on port %d\n", clientIP, port)
+				}
 			}
 		}
 	}
