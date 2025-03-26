@@ -1,5 +1,5 @@
-# HideP
-This tool use port knocking techinque to authorize the client. Implemented in Go.
+# PAW
+Port Authenticator and Whitelister. This tool use port knocking techinque to authorize the client. Implemented in Go.
 
 ## How to Install
 1. Clone the repository `git clone https://github.com/shadirvan/hidep.git`
