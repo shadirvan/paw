@@ -2,7 +2,7 @@
 Port Authenticator and Whitelister. This tool use port knocking techinque to authorize the client. Implemented in Go.
 
 ## How to Install
-1. Clone the repository `git clone https://github.com/shadirvan/hidep.git`
+1. Clone the repository `https://github.com/shadirvan/paw.git`
 2. Install the following Dependencies
 ### Dependencies
 1. Install Go (version 1.20+ recommended) `sudo apt install golang-go`
