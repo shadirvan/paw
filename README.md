@@ -1,7 +1,7 @@
 # PAW
 Port Authenticator and Whitelister. This tool use port knocking techinque to authorize the client. Implemented in Go.
 
-## How to Install
+## Installation
 1. Clone the repository `https://github.com/shadirvan/paw.git`
 2. Install the following Dependencies
 ### Dependencies
@@ -14,22 +14,24 @@ go get -u github.com/google/gopacket/pcap
 ```
 5. Ensure the iptables are installed: `sudo apt install iptables`
 
-## Setup Before Running
+## Prerequisites
 ### On Server
 1. Disable existing firewall rules and drop all input packets
+   - Flush out the rules if any:
+     ```sudo iptables -F```
+   - Set input rules to drop incoming packets:
 ```
-sudo iptables -F
 sudo iptables -P INPUT DROP
 sudo iptables -P OUTPUT ACCEPT
 ```
-2. Modify the port sequence file with your unique pattern inside the secrets.txt
+2. Modify the `secrets.txt` file with your unique port knocking sequence
 3. Enter the server directory : `cd server`
 4. Build the server executable : `go build -o server`
 ### On Client
 1. Enter the client Directory: `cd client`
 2. Build the client executable :`go build -o client`
 
-## Run the program
-on server run the program with sudo : `sudo ./server`
+## Usage
+On server run the program with root privileges : `sudo ./server`
 
-on client run the program: `./client`
+On client run the program with the server IP: `./client -host [server_ip]`
