@@ -15,6 +15,7 @@ go get -u github.com/google/gopacket/pcap
 5. Ensure the iptables are installed: `sudo apt install iptables`
 
 ## Prerequisites
+Before building the project change the shared secret key used to generate HMAC
 ### On Server
 1. Disable existing firewall rules and drop all input packets
    - Flush out the rules if any:
